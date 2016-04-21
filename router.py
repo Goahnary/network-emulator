@@ -40,13 +40,12 @@ class router(object):
 		pass
 
 	def add_neighbor(self, address):
-		neighbor = add_weight(address)
+		n = add_weight(address)
 
-		self.neighbors.append(address)
+		self.neighbors.append(neighbor)
 
 	def add_weight(self, router): # Adds weight between two neighbors 
 		weight = random.randrange(1,11)
-		
 		return (router, weight)
 
 	def get_address(self): # Gives router IP and Port
