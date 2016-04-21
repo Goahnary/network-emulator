@@ -4,6 +4,7 @@ import os
 import ast
 import select
 import random
+import json
 
 class router(object):
 	
@@ -36,23 +37,22 @@ class router(object):
 		self.routerNum = rn
 
 
-	def update_table(self, json): #Updates the forwarding table to the current one
-		pass
+	def add_neighbor(self, address): 	# address = (IP, Port)
+		n = add_weight(address)			# returns a 
 
-	def add_neighbor(self, address):
-		n = add_weight(address)
+		self.neighbors.append(n)
 
-		self.neighbors.append(neighbor)
-
-	def add_weight(self, router): # Adds weight between two neighbors 
+	def add_weight(self, n): # Adds weight between this router and a neighbor 
 		weight = random.randrange(1,11)
-		return (router, weight)
+		return (n, weight)
 
 	def get_address(self): # Gives router IP and Port
 		self.IP = "localhost"
 		self.PORT = BASE_PORT + (MULTIPLIER * self.routerNum)
 
 	def get_neighbors(self): # Returns list of adjacent routers
-		pass
+		return neighbors
 
-
+	
+	def update_table(self, json_table): #Updates the forwarding table to the current one
+		self.table = json.loads(json_table)
