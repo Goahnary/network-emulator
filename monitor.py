@@ -1,6 +1,6 @@
 from router import Router 
 
-print "Ello Mate"
+print "() = weight"
 
 r1 = Router(1)
 r2 = Router(2)
@@ -13,9 +13,11 @@ r8 = Router(8)
 r9 = Router(9)
 r10 = Router(10)
 
+routers = [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
+
+for x in routers:
+	x.add_weight()
 
 
-r1.add_neighbor(r2)
-r2.add_neighbor(r1)
-
-print(r1.get_neighbors())
+for x in routers:
+	print "(" + str(x.weight) + ")Hello router " + str(x.routerNum) + ": " + str(x.IP) + " " + str(x.PORT)
