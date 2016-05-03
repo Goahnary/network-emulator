@@ -26,13 +26,6 @@ class Router:
 		print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
 		sys.exit()
 
-# try:
-#     s.bind((IP, PORT))
-
-# except socket.error , msg:
-#     print 'Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
-#     sys.exit()
-
 
 	def __init__(self, rn):
 		self.routerNum = rn
@@ -57,7 +50,7 @@ class Router:
 
 	def connectNeighbour(self, neighbor):
 		try :
-			self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		except socket.error, msg :
 			print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
 			sys.exit()
@@ -68,13 +61,3 @@ class Router:
 		except socket.error, msg :
 			print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
 			sys.exit()
-
-# router1.connectNeighbour(router2)
-# router2.connectNeighbour(router5)
-# router3.connectNeighbour(router4)
-
-# print router1.weight
-# print router2.weight
-# print router3.weight
-# print router4.weight
-# print router5.weight
