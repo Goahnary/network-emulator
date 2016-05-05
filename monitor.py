@@ -25,58 +25,47 @@ graph = []
 
 # FIXME: FIND RANDOM CONNECTION
 print "connecting r1 to r2: "
-r1.add_neighbor((r2.IP, r2.PORT))
-r1.connectNeighbour(r2)
+r1.add_neighbor(r2)
 graph.append( (1, 2, 5) )
 
 print "connecting r2 to r3: "
-r2.add_neighbor((r3.IP, r3.PORT))
-r2.connectNeighbour(r3)
+r2.add_neighbor(r3)
 graph.append( (2, 3, 2) )
 
 print "connecting r3 to r4: "
-r3.add_neighbor((r4.IP, r4.PORT))
-r3.connectNeighbour(r4)
+r3.add_neighbor(r4)
 graph.append( (3, 4, 9) )
 
 print "connecting r3 to r5: "
-r3.add_neighbor((r5.IP, r5.PORT))
-r3.connectNeighbour(r5)
+r3.add_neighbor(r5)
 graph.append( (3, 5, 1) )
 
 print "connecting r4 to r6: "
-r4.add_neighbor((r6.IP, r6.PORT))
-r4.connectNeighbour(r6)
+r4.add_neighbor(r6)
 graph.append( (4, 6, 1) )
 
 print "connecting r5 to r6: "
-r5.add_neighbor((r6.IP, r6.PORT))
-r5.connectNeighbour(r6)
+r5.add_neighbor(r6)
 graph.append( (5, 6, 10) )
 
 print "connecting r6 to r7: "
-r6.add_neighbor((r7.IP, r7.PORT))
-r6.connectNeighbour(r7)
+r6.add_neighbor(r7)
 graph.append( (6, 7, 7) )
 
 print "connecting r7 to r8: "
-r7.add_neighbor((r8.IP, r8.PORT))
-r7.connectNeighbour(r8)
+r7.add_neighbor(r8)
 graph.append( (7, 8, 1) )
 
 print "connecting r7 to r9: "
-r7.add_neighbor((r9.IP, r9.PORT))
-r7.connectNeighbour(r9)
+r7.add_neighbor(r9)
 graph.append( (7, 9, 8) )
 
 print "connecting r8 to r10: "
-r8.add_neighbor((r10.IP, r10.PORT))
-r8.connectNeighbour(r10)
+r8.add_neighbor(r10)
 graph.append( (8, 10, 11) )
 
 print "connecting r9 to r10: "
-r9.add_neighbor((r10.IP, r10.PORT))
-r9.connectNeighbour(r10)
+r9.add_neighbor(r10)
 graph.append( (9, 10, 2) )
 
 for x in r3.neighbors:
