@@ -45,6 +45,17 @@ class Router:
 			print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
 			sys.exit()
 
+	def drop_neighbor(self, n):
+		cnt = -1
+
+		for x in self.neighbors:
+			cnt += 1
+
+			if x[0] == n:
+				index = cnt
+
+		del self.neighbors[index]
+
 	def get_address(self): # Gives router IP and Port
 		self.IP = "localhost"
 		self.PORT = self.BASE_PORT + self.routerNum*self.MULTIPLIER
