@@ -82,48 +82,80 @@ for x in r6.neighbors:
 	print x
 
 
-def draw_graph(graph, labels=None, graph_layout='shell',
-							 node_size=1600, node_color='blue', node_alpha=0.3,
-							 node_text_size=12,
-							 edge_color='blue', edge_alpha=0.3, edge_tickness=1,
-							 edge_text_pos=0.3,
-							 text_font='sans-serif'):
+def draw_graph():
 
-		# create networkx graph
-		G=nx.Graph()
+    G=nx.Graph()
 
-		# add edges
-		for edge in graph:
-				G.add_edge(edge[0], edge[1], edge[2]) # (edge1, edge2, weight)
+    G.add_node("r1")
+    G.add_node("r2")
+    G.add_node("r3")
+    G.add_node("r4")
+    G.add_node("r5")
+    G.add_node("r6")
+    G.add_node("r7")
+    G.add_node("r8")
+    G.add_node("r9")
+    G.add_node("r10")
 
-		# these are different layouts for the network you may try
-		# shell seems to work best
-		if graph_layout == 'spring':
-				graph_pos=nx.spring_layout(G)
-		elif graph_layout == 'spectral':
-				graph_pos=nx.spectral_layout(G)
-		elif graph_layout == 'random':
-				graph_pos=nx.random_layout(G)
-		else:
-				graph_pos=nx.shell_layout(G)
+    G.add_edge('r1','r2',weight=6)
+    G.add_edge('r3','r2',weight=4)
+    G.add_edge('r5','r3',weight=2)
+    G.add_edge('r7','r9',weight=2)
+    G.add_edge('r10','r4',weight=8)
+    G.add_edge('r2','r10',weight=3)
+    G.add_edge('r5','r9',weight=6)
+    G.add_edge('r4','r1',weight=10)
+    G.add_edge('r6','r7',weight=9)
+    G.add_edge('r9','r10',weight=1)
+    G.add_edge('r8','r2',weight=1)
+    G.add_edge('r9','r8',weight=1)
+    G.add_edge('r3','r8',weight=1)
 
-		# draw graph
-		nx.draw_networkx_nodes(G,graph_pos,node_size=node_size, 
-													 alpha=node_alpha, node_color=node_color)
-		nx.draw_networkx_edges(G,graph_pos,width=edge_tickness,
-													 alpha=edge_alpha,edge_color=edge_color)
-		nx.draw_networkx_labels(G, graph_pos,font_size=node_text_size,
-														font_family=text_font)
 
-		if labels is None:
-				labels = range(len(graph))
 
-		edge_labels = dict(zip(graph, labels))
-		nx.draw_networkx_edge_labels(G, graph_pos, edge_labels=edge_labels, 
-																 label_pos=edge_text_pos)
 
-		# show graph
-		plt.show()
+    elarge=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] >5]
+    esmall=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] <=5]
+
+    pos=nx.spring_layout(G) # positions for all nodes
+
+    # nodes
+    nx.draw_networkx_nodes(G,pos,node_size=700,node_color='b')
+
+    # edges
+    nx.draw_networkx_edges(G,pos,edgelist=elarge,
+                        width=6)
+    nx.draw_networkx_edges(G,pos,edgelist=esmall,
+                        width=6,alpha=0.5,edge_color='b',style='dashed')
+
+    # labels
+    nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
+
+
+    weights = []
+    weights.append(G.get_edge_data('r1','r2'))
+    weights.append(G.get_edge_data('r3','r2'))
+    weights.append(G.get_edge_data('r5','r3'))
+    weights.append(G.get_edge_data('r7','r9'))
+    weights.append(G.get_edge_data('r10','r4'))
+    weights.append(G.get_edge_data('r2','r10'))
+    weights.append(G.get_edge_data('r5','r9'))
+    weights.append(G.get_edge_data('r4','r1'))
+    weights.append(G.get_edge_data('r6','r7'))
+    weights.append(G.get_edge_data('r9','r10'))
+    weights.append(G.get_edge_data('r8','r2'))
+    weights.append(G.get_edge_data('r9','r8'))
+    weights.append(G.get_edge_data('r3','r8'))
+
+
+    print'The weights of the connected routers are: ' + str(weights)
+
+
+    plt.axis('off')
+    plt.savefig("weighted_graph.png") # save as png
+    plt.show() # display
+
+draw_graph()
 
 
 print "Welcome to our Network Emulator!"
