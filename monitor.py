@@ -138,14 +138,7 @@ rDrop = input("Enter a router id to drop(integer): ")
 for x in routers[rDrop - 1].neighbors:
 	routers[x[0]-1].drop_neighbor(rDrop)
 
-print "neighbors of r5:"
-for x in r5.neighbors:
-	print x
-
-print "neighbors of r4:"
-for x in r4.neighbors:
-	print x
-
-print "neighbors of r7:"
-for x in r7.neighbors:
-	print x
+for x in routers[rDrop - 1].neighbors:
+	print "neighbors of r" + str(rDrop) + ":"
+	for x in routers[x[0]-1].neighbors:
+		print x
