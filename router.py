@@ -40,7 +40,7 @@ class Router:
 			n = (neighbor.routerNum, neighbor.IP, neighbor.PORT)			# n = (IP, PORT, WEIGHT, routerNum)
 			self.neighbors.append(n)
 
-			print 'Successfully connected to neighbor.............................'
+			# print 'Successfully connected to neighbor.............................'
 		except socket.error, msg :
 			print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
 			sys.exit()
