@@ -56,9 +56,3 @@ class Router:
 
 	def update_table(self, json_table): #Updates the forwarding table to the current one
 		self.table = json.loads(json_table)
-
-	def connectNeighbour(self, neighbor):#YOU MUST ADD NEIGHBOR BEFORE CONNECTING NEIGHBOR
-		
-
-
-#EOF

@@ -1,6 +1,6 @@
-from router import Router
 import networkx as nx
 import matplotlib.pyplot as plt
+from router import Router
 
 print "() = weight"
 
