@@ -16,6 +16,7 @@ r10 = Router(10)
 
 routers = {1:r1, 2:r2, 3:r3, 4:r4, 5:r5, 6:r6, 7:r7, 8:r8, 9:r9, 10:r10}
 
+newRouterIndex = len(routers) + 1
 # for x in routers:
 # 	print "Router " + str(x.routerNum) + ": " + str(x.IP) + " " + str(x.PORT)
 
@@ -108,26 +109,6 @@ def draw_graph():
     # labels
     nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
 
-
-    # weights = []
-    # weights.append(G.get_edge_data('r1','r2'))
-    # weights.append(G.get_edge_data('r3','r2'))
-    # weights.append(G.get_edge_data('r5','r3'))
-    # weights.append(G.get_edge_data('r7','r9'))
-    # weights.append(G.get_edge_data('r10','r4'))
-    # weights.append(G.get_edge_data('r2','r10'))
-    # weights.append(G.get_edge_data('r5','r9'))
-    # weights.append(G.get_edge_data('r4','r1'))
-    # weights.append(G.get_edge_data('r6','r7'))
-    # weights.append(G.get_edge_data('r9','r10'))
-    # weights.append(G.get_edge_data('r8','r2'))
-    # weights.append(G.get_edge_data('r9','r8'))
-    # weights.append(G.get_edge_data('r3','r8'))
-
-
-    # print'The weights of the connected routers are: ' + str(weights)
-
-
     plt.axis('off')
     plt.savefig("weighted_graph.png") # save as png
     plt.show() # display
@@ -135,36 +116,65 @@ def draw_graph():
 draw_graph()
 
 print "Welcome to our Network Emulator!"
+
 time.sleep(1)
 
 while True:
 
-	rDrop = input("Enter a router id to drop(integer): ")
+	dropAdd = input("would you like to drop or add a router?\n[ 1 = drop, 2 = add ]\n")
 
-	if rDrop == "exit":
+	if dropAdd == "exit":
 		break
 
-	graph2 = ()
+	if dropAdd == 1:
 
-	#Drop edges from graph:
-	for x in graph:
-		if x[0] == rDrop or x[1] == rDrop:
-			pass
-		else:
-			graph2 = graph2 + (x,)
+			rDrop = input("Enter a router id to drop(integer): ")
 
-	graph = graph2
+			graph2 = ()
 
-	# Drop router:
-	for x in routers[rDrop].neighbors:
-		routers[x[0]].drop_neighbor(rDrop)
+			#Drop edges from graph:
+			for x in graph:
+				if x[0] == rDrop or x[1] == rDrop:
+					pass
+				else:
+					graph2 = graph2 + (x,)
+
+			graph = graph2
+
+			# Drop router:
+			for x in routers[rDrop].neighbors:
+				routers[x[0]].drop_neighbor(rDrop)
 
 
-	for x in routers[rDrop].neighbors:
-		print "neighbors of r" + str(routers[x[0]].routerNum) + ":"
-		for x in routers[x[0]].neighbors:
-			print x
+			for x in routers[rDrop].neighbors:
+				print "neighbors of r" + str(routers[x[0]].routerNum) + ":"
+				for x in routers[x[0]].neighbors:
+					print x
 
-	del routers[rDrop]
+			del routers[rDrop]
 
-	draw_graph()
+			draw_graph()
+
+	elif dropAdd == 2:
+
+			neighbors = input("Enter router ids to connect new router to separated by ONLY commas:\n(ex: \"1,3\")\n ")
+
+			wghts = input("Enter the weight between the routers respectively in the same format:\n(ex: \"10,5\")\n ")
+
+			newRouter = newRouterIndex  # sets up a new router at the next id
+			newRouterIndex += 1 				# increase router indexing for next router add
+
+			print "Adding Router " + str(newRouter)
+
+			routers[newRouter] = Router(newRouter)
+
+			# Add router:
+			for x in range(len(neighbors)):
+				routers[neighbors[x]].add_neighbor(routers[newRouter])
+				routers[newRouter].add_neighbor(routers[neighbors[x]])
+				graph.append( ( newRouter, neighbors[x], wghts[x]) )
+
+			draw_graph()
+	else:
+		print "You did not select a valid option..."
+		time.sleep(1)
