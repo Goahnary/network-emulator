@@ -139,6 +139,6 @@ for x in routers[rDrop - 1].neighbors:
 	routers[x[0]-1].drop_neighbor(rDrop)
 
 for x in routers[rDrop - 1].neighbors:
-	print "neighbors of r" + str(rDrop) + ":"
+	print "neighbors of r" + str(routers[x[0]-1].routerNum) + ":"
 	for x in routers[x[0]-1].neighbors:
 		print x
