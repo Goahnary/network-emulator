@@ -42,16 +42,13 @@ class Router:
 		try:
 			self.socket.bind((neighbor.IP, self.PORT - len(self.neighbors) ))
 			
-			n = (neighbor.routerNum, neighbor.IP, neighbor.PORT, self.get_weight())			# n = (IP, PORT, WEIGHT, routerNum)
+			n = (neighbor.routerNum, neighbor.IP, neighbor.PORT)			# n = (IP, PORT, WEIGHT, routerNum)
 			self.neighbors.append(n)
 
 			print 'Successfully connected to neighbor.............................'
 		except socket.error, msg :
 			print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
 			sys.exit()
-
-	def get_weight(self): # Adds weight between this router and a neighbor 
-		return random.randint(1,11)
 
 	def get_address(self): # Gives router IP and Port
 		self.IP = "localhost"
