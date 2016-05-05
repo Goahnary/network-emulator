@@ -15,21 +15,16 @@ class Router:
 	BASE_PORT = 7770
 	MULTIPLIER = 9
 
-	#TRACKING
-	neighbors = []
-
-
 	try :
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 	except socket.error, msg :
 		print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
 		sys.exit()
 
-
 	def __init__(self, rn):
 		self.routerNum = rn
 		self.get_address()
+		self.neighbors = []
 
 	def add_neighbor(self, neighbor): 	# address = (IP, Port)
 
