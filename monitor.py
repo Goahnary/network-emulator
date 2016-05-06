@@ -124,7 +124,7 @@ time.sleep(1)
 
 while True:
 
-	dropAdd = input("would you like to drop or add a router?\n[ 1 = drop, 2 = add, 3 = Print Weights, 4 = Shortest path, 5 = spanning tree ]\n")
+	dropAdd = input("[ 1 = drop, 2 = add, 3 = Print Weights, 4 = Shortest path, 5 = spanning tree, 6 = Forwarding Table]\n")
 
 	if dropAdd == "exit":
 		break
@@ -187,8 +187,15 @@ while True:
 
 	elif dropAdd == 4:
 
-		print "The shortest path between router 1 and router 10 is\n(Note we assume the client is connected to the router 1 and server to router 10: "
-		print(nx.dijkstra_path(G,'r1','r10'))
+		startNode = input("Enter a starting router ID(integer): ")
+		endNode = input("Enter an ending router ID(integer): ")
+		
+		path = nx.dijkstra_path(G,'r' + str(startNode),'r' + str(endNode))
+
+		print "The shortest path between router " + str(startNode) + " and router " + str(endNode) + " is:"
+		print path
+
+
 
 	elif dropAdd == 5:
 		# Print spanning Tree
@@ -198,25 +205,15 @@ while True:
 		print (sorted(mst.edges(data=True)))
 
 	elif dropAdd == 6:
-		print "The forwarding table  for router 1 is: "
-		print(nx.dijkstra_path(G,'r1','r10'))
-		print "The forwarding table  for router 2 is: "
-		print(nx.dijkstra_path(G,'r2','r10'))		
-		print "The forwarding table  for router 3 is: "
-		print(nx.dijkstra_path(G,'r3','r10'))				
-		print "The forwarding table  for router 4 is: "
-		print(nx.dijkstra_path(G,'r4','r10'))								
-		print "The forwarding table  for router 5 is: "
-		print(nx.dijkstra_path(G,'r5','r10'))
-		print "The forwarding table  for router 6 is: "
-		print(nx.dijkstra_path(G,'r6','r10'))
-		print "The forwarding table  for router 7 is: "
-		print(nx.dijkstra_path(G,'r7','r10'))
-		print "The forwarding table  for router 8 is: "
-		print(nx.dijkstra_path(G,'r8','r10'))
-		print "The forwarding table  for router 9 is: "
-		print(nx.dijkstra_path(G,'r9','r10'))
-		print "The forwarding table  for router 10 is: "
-		print(nx.dijkstra_path(G,'r10','r10'))	
+
+		startNode = input("Enter a routing ID to see the next step in the shortest path(integer): ")
+		endNode = input("Enter an ending router ID(integer): ")
+		
+		path = nx.dijkstra_path(G,'r' + str(startNode),'r' + str(endNode))
+
+		print "From router " + str(startNode) + " forward the data to " + str(path[1])
+
+		time.sleep(1)
+
 	else:
 		print "Please choose a valid option or type 'exit' to stop the program..."
