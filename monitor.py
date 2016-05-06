@@ -193,8 +193,30 @@ while True:
 	elif dropAdd == 5:
 		# Print spanning Tree
 		mst = nx.minimum_spanning_tree(G)
-			# edgelist = list(mst)
-				print 'The Spanning Tree: '
-				print (sorted(mst.edges(data=True)))
+		# edgelist = list(mst)
+		print 'The Spanning Tree: '
+		print (sorted(mst.edges(data=True)))
+
+	elif dropAdd == 6:
+		print "The forwarding table  for router 1 is: "
+		print(nx.dijkstra_path(G,'r1','r10'))
+		print "The forwarding table  for router 2 is: "
+		print(nx.dijkstra_path(G,'r2','r10'))		
+		print "The forwarding table  for router 3 is: "
+		print(nx.dijkstra_path(G,'r3','r10'))				
+		print "The forwarding table  for router 4 is: "
+		print(nx.dijkstra_path(G,'r4','r10'))								
+		print "The forwarding table  for router 5 is: "
+		print(nx.dijkstra_path(G,'r5','r10'))
+		print "The forwarding table  for router 6 is: "
+		print(nx.dijkstra_path(G,'r6','r10'))
+		print "The forwarding table  for router 7 is: "
+		print(nx.dijkstra_path(G,'r7','r10'))
+		print "The forwarding table  for router 8 is: "
+		print(nx.dijkstra_path(G,'r8','r10'))
+		print "The forwarding table  for router 9 is: "
+		print(nx.dijkstra_path(G,'r9','r10'))
+		print "The forwarding table  for router 10 is: "
+		print(nx.dijkstra_path(G,'r10','r10'))	
 	else:
 		print "Please choose a valid option or type 'exit' to stop the program..."
