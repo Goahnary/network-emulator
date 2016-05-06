@@ -180,7 +180,7 @@ while True:
 			draw_graph()
 	
 	elif dropAdd == 3:
-
+		# Print weights:
 		for x in graph:
 			print "The connection between router" + str(x[0]) + " and router" + str(x[1]) + " has a weight of: " + str(x[2])
 
@@ -191,9 +191,10 @@ while True:
 		print(nx.dijkstra_path(G,'r1','r10'))
 
 	elif dropAdd == 5:
-		
+		# Print spanning Tree
 		mst = nx.minimum_spanning_tree(G)
-	   	# edgelist = list(mst)
-        print 'The Spanning Tree: '
-        print (sorted(mst.edges(data=True)))
-
+			# edgelist = list(mst)
+				print 'The Spanning Tree: '
+				print (sorted(mst.edges(data=True)))
+	else:
+		print "Please choose a valid option or type 'exit' to stop the program..."

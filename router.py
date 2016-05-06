@@ -62,3 +62,25 @@ class Router:
 
 	def update_table(self, json_table): #Updates the forwarding table to the current one
 		self.table = json.loads(json_table)
+
+	def serve(self):
+		BUFFER_SIZE = 128
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.bind(('', self.PORT))
+		print 'Now listening ........ '
+		s.listen(1)				# listens for response
+		conn, addr = s.accept()			# sets these two variables to socket accept object
+		print 'connection address: ', addr	# prints who is connecting
+		data = conn.recv(BUFFER_SIZE)
+		s.sendto(data,("localhost",7788))
+		s.close()
+
+	def client(self, neighbor):
+		BUFFER_SIZE = 128
+		MESSAGE = ""
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # creates socket
+		s.connect((neighbor.IP, neighbour.PORT))	# connects to the server
+		s.send(MESSAGE)			# sends message
+		data = s.recv(BUFFER_SIZE)	# Recieves return messages
+		s.close()
+		print "reply: ", data		
