@@ -81,47 +81,50 @@ graph.append( (9, 10, 2) )
 
 # for x in r6.neighbors:
 # 	print x
-
+G=nx.Graph()
 
 def draw_graph():
 
-    G=nx.Graph()
+	
 
-    for k,v in routers.items():
-    	G.add_node("r" + str(v.routerNum))
+	for k,v in routers.items():
+		G.add_node("r" + str(v.routerNum))
 
-    #NEED TO CHANGE THIS TO LOOP through graph and dynamically
-    for x in graph:
-    	G.add_edge('r' + str(x[0]),'r' + str(x[1]),weight=x[2])
+	#NEED TO CHANGE THIS TO LOOP through graph and dynamically
+	for x in graph:
+		G.add_edge('r' + str(x[0]),'r' + str(x[1]),weight=x[2])
 
-    # elarge=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] >5]
-    # esmall=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] <=5]
+	# elarge=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] >5]
+	# esmall=[(u,v) for (u,v,d) in G.edges(data=True) if d['weight'] <=5]
 
-    pos=nx.spring_layout(G) # positions for all nodes
+	pos=nx.spring_layout(G) # positions for all nodes
 
-    # nodes
-    nx.draw_networkx_nodes(G,pos,node_size=700,node_color='b')
+	# nodes
+	nx.draw_networkx_nodes(G,pos,node_size=700,node_color='b')
 
-    # edges
-    # nx.draw_networkx_edges(G,pos,edgelist=elarge,width=6)
-    nx.draw_networkx_edges(G,pos,edgelist=None,width=6,alpha=0.5,edge_color='b',style='solid',label="e")
+	# edges
+	# nx.draw_networkx_edges(G,pos,edgelist=elarge,width=6)
+	nx.draw_networkx_edges(G,pos,edgelist=None,width=6,alpha=0.5,edge_color='b',style='solid',label="e")
 
-    # labels
-    nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
+	# labels
+	nx.draw_networkx_labels(G,pos,font_size=20,font_family='sans-serif')
 
-    plt.axis('off')
-    plt.savefig("weighted_graph.png") # save as png
-    plt.show() # display
+	plt.axis('off')
+	plt.savefig("weighted_graph.png") # save as png
+	plt.show() # display
 
 draw_graph()
 
 print "Welcome to our Network Emulator!"
 
+
+
+
 time.sleep(1)
 
 while True:
 
-	dropAdd = input("would you like to drop or add a router?\n[ 1 = drop, 2 = add ]\n")
+	dropAdd = input("would you like to drop or add a router?\n[ 1 = drop, 2 = add, 3 = Print Weights, 4 = Shortest path, 5 = spanning tree ]\n")
 
 	if dropAdd == "exit":
 		break
@@ -175,6 +178,22 @@ while True:
 				graph.append( ( newRouter, neighbors[x], wghts[x]) )
 
 			draw_graph()
-	else:
-		print "You did not select a valid option..."
-		time.sleep(1)
+	
+	elif dropAdd == 3:
+
+		for x in graph:
+			print "The connection between router" + str(x[0]) + " and router" + str(x[1]) + " has a weight of: " + str(x[2])
+
+
+	elif dropAdd == 4:
+
+		print "The shortest path between router 1 and router 10 is\n(Note we assume the client is connected to the router 1 and server to router 10: "
+		print(nx.dijkstra_path(G,'r1','r10'))
+
+	elif dropAdd == 5:
+		
+		mst = nx.minimum_spanning_tree(G)
+	   	# edgelist = list(mst)
+        print 'The Spanning Tree: '
+        print (sorted(mst.edges(data=True)))
+
