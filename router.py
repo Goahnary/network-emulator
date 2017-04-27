@@ -1,14 +1,9 @@
 import socket
 import sys
-import os
-import ast
-import select
-import random
 import json
 
 
 class Router:
-	
 	"""docstring for router"""
 
 	# CONSTANT VARS
@@ -17,8 +12,8 @@ class Router:
 
 	try :
 		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	except socket.error, msg :
-		print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+	except socket.error as msg :
+		print('Failed to create socket. Error Code : ' + str(msg.errno) + ' Message ' + msg.strerror)
 		sys.exit()
 
 	def __init__(self, rn):
@@ -30,8 +25,8 @@ class Router:
 
 		try :
 			self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		except socket.error, msg :
-			print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+		except socket.error as msg :
+			print('Failed to create socket. Error Code : ' + str(msg.errno) + ' Message ' + msg.strerror)
 			sys.exit()
 
 		try:
@@ -41,8 +36,8 @@ class Router:
 			self.neighbors.append(n)
 
 			# print 'Successfully connected to neighbor.............................'
-		except socket.error, msg :
-			print 'Failed to create socket. Error Code : ' + str(msg[0]) + ' Message ' + msg[1]
+		except socket.error as msg :
+			print('Failed to create socket. Error Code : ' + str(msg.errno) + ' Message ' + msg.strerror)
 			sys.exit()
 
 	def drop_neighbor(self, n):
@@ -67,10 +62,10 @@ class Router:
 		BUFFER_SIZE = 128
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.bind(('', self.PORT))
-		print 'Now listening ........ '
+		print('Now listening ........ ')
 		s.listen(1)				# listens for response
 		conn, addr = s.accept()			# sets these two variables to socket accept object
-		print 'connection address: ', addr	# prints who is connecting
+		print('connection address: ', addr)	# prints who is connecting
 		data = conn.recv(BUFFER_SIZE)
 		s.sendto(data,("localhost",7788))
 		s.close()
@@ -83,4 +78,4 @@ class Router:
 		s.send(MESSAGE)			# sends message
 		data = s.recv(BUFFER_SIZE)	# Recieves return messages
 		s.close()
-		print "reply: ", data		
+		print("reply: ", data)	

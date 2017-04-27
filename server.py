@@ -12,11 +12,11 @@ s.bind(('', TCP_PORT))
 while data != "EXIT":				# loops unless it gets the exit command
 	s.listen(1)				# listens for response
 	conn, addr = s.accept()			# sets these two variables to socket accept object
-	print 'connection address: ', addr	# prints who is connecting
+	print('connection address: ', addr)	# prints who is connecting
 	data = conn.recv(BUFFER_SIZE)		# grabs sent information from the s.accept object
 	if not data: break			# If there is nothing sent (sendiing null) break the loop
 	data = data.upper()			# capitalizes the data sent
-	print "received data:", data
+	print("received data:", data)
 	conn.send(data) 			# send the data back	
 
-conn.close()	
+conn.close()

@@ -17,23 +17,23 @@ r10 = Router(10)
 routers = [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
 
 
-print 'Here are the Routers available.......'
+print('Here are the Routers available.......')
 for x in routers:
-  print "Router " + str(x.routerNum) + ": " + str(x.IP) + " " + str(x.PORT)
+  print("Router " + str(x.routerNum) + ": " + str(x.IP) + " " + str(x.PORT))
 
 
 graph = []
 
 
 for x in r6.neighbors:
-  print x
+  print(x)
 
 
 def draw_graph():
 
     G=nx.Graph()
 
-    reply = raw_input("Do you want to add a new router (y/n): ")
+    reply = input("Do you want to add a new router (y/n): ")
 
     if reply == "n":
      return 
@@ -100,14 +100,14 @@ def draw_graph():
     weights.append(G.get_edge_data('r3','r8'))
 
 
-    print'The weights of the connected routers are: ' + str(weights)
-    print '############################################################/n'
-    print 'The shortest path from the two specified router below is: '
+    print('The weights of the connected routers are: ' + str(weights))
+    print('############################################################/n')
+    print('The shortest path from the two specified router below is: ')
     print(nx.dijkstra_path(G,'r1','r10'))
-    print '############################################################/n'
+    print('############################################################/n')
     mst = nx.minimum_spanning_tree(G)
    # edgelist = list(mst)
-    print 'The Spanning Tree: '
+    print('The Spanning Tree: ')
     print (sorted(mst.edges(data=True)))
 
     plt.axis('off')
@@ -117,9 +117,9 @@ def draw_graph():
 draw_graph()
 
 
-print "Welcome to our Network Emulator!"
+print("Welcome to our Network Emulator!")
 time.sleep(1)
-print "This simulator provides blah blah blah" # @FIXME: WRITE A DESCRIPTION
+print("This simulator provides blah blah blah") # @FIXME: WRITE A DESCRIPTION
 time.sleep(1)
 
 r2.serve()
@@ -132,6 +132,6 @@ for x in routers[rDrop - 1].neighbors:
   routers[x[0]-1].drop_neighbor(rDrop)
 
 for x in routers[rDrop - 1].neighbors:
-  print "neighbors of r" + str(routers[x[0]-1].routerNum) + ":"
+  print("neighbors of r" + str(routers[x[0]-1].routerNum) + ":")
   for x in routers[x[0]-1].neighbors:
-    print x
+    print(x)

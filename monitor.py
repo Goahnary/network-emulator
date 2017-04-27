@@ -115,10 +115,7 @@ def draw_graph():
 
 draw_graph()
 
-print "Welcome to our Network Emulator!"
-
-
-
+print("Welcome to our Network Emulator")
 
 time.sleep(1)
 
@@ -129,7 +126,7 @@ while True:
 	if dropAdd == "exit":
 		break
 
-	if dropAdd == 1:
+	if dropAdd == "1":
 
 			rDrop = input("Enter a router id to drop(integer): ")
 
@@ -150,15 +147,15 @@ while True:
 
 
 			for x in routers[rDrop].neighbors:
-				print "neighbors of r" + str(routers[x[0]].routerNum) + ":"
+				print("neighbors of r" + str(routers[x[0]].routerNum) + ":")
 				for x in routers[x[0]].neighbors:
-					print x
+					print(x)
 
 			del routers[rDrop]
 
 			draw_graph()
 
-	elif dropAdd == 2:
+	elif dropAdd == "2":
 
 			neighbors = input("Enter router ids to connect new router to separated by ONLY commas:\n(ex: \"1,3\")\n ")
 
@@ -167,7 +164,7 @@ while True:
 			newRouter = newRouterIndex  # sets up a new router at the next id
 			newRouterIndex += 1 				# increase router indexing for next router add
 
-			print "Adding Router " + str(newRouter)
+			print("Adding Router " + str(newRouter))
 
 			routers[newRouter] = Router(newRouter)
 
@@ -179,41 +176,41 @@ while True:
 
 			draw_graph()
 	
-	elif dropAdd == 3:
+	elif dropAdd == "3":
 		# Print weights:
 		for x in graph:
-			print "The connection between router" + str(x[0]) + " and router" + str(x[1]) + " has a weight of: " + str(x[2])
+			print("The connection between router" + str(x[0]) + " and router" + str(x[1]) + " has a weight of: " + str(x[2]))
 
 
-	elif dropAdd == 4:
+	elif dropAdd == "4":
 
 		startNode = input("Enter a starting router ID(integer): ")
 		endNode = input("Enter an ending router ID(integer): ")
 		
 		path = nx.dijkstra_path(G,'r' + str(startNode),'r' + str(endNode))
 
-		print "The shortest path between router " + str(startNode) + " and router " + str(endNode) + " is:"
-		print path
+		print("The shortest path between router " + str(startNode) + " and router " + str(endNode) + " is:")
+		print(path)
 
 
 
-	elif dropAdd == 5:
+	elif dropAdd == "5":
 		# Print spanning Tree
 		mst = nx.minimum_spanning_tree(G)
 		# edgelist = list(mst)
-		print 'The Spanning Tree: '
+		print('The Spanning Tree: ')
 		print (sorted(mst.edges(data=True)))
 
-	elif dropAdd == 6:
+	elif dropAdd == "6":
 
 		startNode = input("Enter a routing ID to see the next step in the shortest path(integer): ")
 		endNode = input("Enter an ending router ID(integer): ")
 		
 		path = nx.dijkstra_path(G,'r' + str(startNode),'r' + str(endNode))
 
-		print "From router " + str(startNode) + " forward the data to " + str(path[1])
+		print("From router " + str(startNode) + " forward the data to " + str(path[1]))
 
 		time.sleep(1)
 
 	else:
-		print "Please choose a valid option or type 'exit' to stop the program..."
+		print("Please choose a valid option or type 'exit' to stop the program...")
