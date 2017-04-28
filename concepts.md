@@ -1,4 +1,4 @@
-#### Router forwarding table generation:
+### Router forwarding table generation:
 
 **When a router is added**
 
