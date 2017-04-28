@@ -7,5 +7,3 @@
 ## Requirements of the program we need to meet:
 
 #### Router:
-
-* Connects to monitor
