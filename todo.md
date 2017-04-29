@@ -8,7 +8,7 @@
   * Create forwarding tables for new nodes based on the current graph
 * Ability to add router to network and initialize connections to other routers
   * Make an option to display the network topology when prompted to add/drop/etc...
-* Accomodate up to 10 network routers
+* ~~Accomodate up to 10 network routers~~
 * Have a program for visualization that updates in (near) real time
   * only has to show a snapshot of the network when there is a change
 * Dynamically generated weights instead of user input
