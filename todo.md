@@ -2,7 +2,7 @@
 
 ## Requirements of the program we need to meet:
 
-* Allow routrers to run on different machines in ANY configuration.
+* Allow routrers to run on different machines in ANY configuration. (Jared)
   * Locate routers anywhere on the network (By IP Address & Port)
 * Update/keep track of forwarding table
   * Create forwarding tables for new nodes based on the current graph
@@ -16,4 +16,4 @@
 * Implement a thread handling user input to allow visualization to run throughout the program
 * Send data from one node to another
   * Propogate one packet and trace its route to show that it follows the current forwarding table
-* Make routers work independently (run and listen for input) on every device
+* Make routers work independently (run and listen for input) on every device (Jared)
