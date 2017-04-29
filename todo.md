@@ -2,7 +2,7 @@
 
 ## Requirements of the program we need to meet:
 
-* Allow routrers to run on different machines in ANY configuration.
+* Allow routrers to run on different machines in ANY configuration. (Jared)
   * Locate routers anywhere on the network (By IP Address & Port)
 * Update/keep track of forwarding table
   * Create forwarding tables for new nodes based on the current graph
