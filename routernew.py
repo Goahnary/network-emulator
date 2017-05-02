@@ -8,12 +8,13 @@ import queue
 import operator
 import time
 
-#constants
-DATA_SIZE = 8192
-
 class Router:
 	monitorIP = "127.0.0.1"
 	monitorPort = 5000
+
+	#constants
+	DATA_SIZE = 8192
+	FILE_PADDING = 64
 
 	#routerCode = "A" or some other letter.
 	def __init__(self, routerCode, host, port):
@@ -312,6 +313,17 @@ class Router:
 			msgData = (msgData,)
 		return (msgType, msgData)
 
+	#wrap data to route through the network
+	def wrapRoute(self, destination, data, newFile = False):
+		dType = "sFile"
+		if (newFile):
+			dType = "cFile"
+
+		inner = data
+		if not isinstance(data, tuple):
+			inner = (data,)
+		return self.wrapMessage("data", ((destination, self.routerCode), (dType, data)))
+
 	#wrap sending and receiving data in JSON
 	def dataReceive(self, conn):
 		try:
@@ -362,14 +374,16 @@ class Router:
 				msgType = data[0]
 				msgData = data[1]
 
+				msgSrc = ""
 				#routed data in the form:
-				#("data", ("code", ("type", (actual, data, here)))
+				#("data", (("destCode", "srcCode"), ("type", (actual, data, here))))
 				if (msgType == "data"):
-					routerCode = msgData[1][0]
+					routerCode = msgData[1][0][0]
 					if (routerCode == self.routerCode):
 						#handle the message properly below
 						msgType = msgData[1][1][0]
 						msgData = msgData[1][1][1]
+						msgSrc = msgData[1][0][1]
 					else:
 						#forward the data where it needs to go and continue with the next loop
 						self.arrSending[self.forwarding[routerCode]].put(data)
@@ -457,13 +471,17 @@ class Router:
 						for key, value in self.neighbors:
 							self.arrSending[key].put(data)
 
-				#request a file from the server
+				#file data received from the server
 				elif (msgType == "rFile"):
-					pass
+					self.receivedFile(msgData, msgSrc)
 
-				#sending file data
+				#file data sent to the server
 				elif (msgType == "sFile"):
-					pass
+					self.downloadFile(msgData, msgSrc)
+
+				#create file on the server
+				elif (msgType == "cFile"):
+					self.createFile(msgData, msgSrc)
 
 				#print text received
 				elif (msgType == "text"):
@@ -480,3 +498,12 @@ class Router:
 		self.removeRouter(code)
 
 		conn.close()
+
+	def receivedFile(self, data, source):
+		pass
+
+	def downloadFile(self, data, source):
+		pass
+
+	def createFile(self, data, source):
+		pass
