@@ -335,7 +335,7 @@ class Router:
 				print('Socket send error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)
 				break
 			except:
-				print("Error")
+				print("Sending Disconnected: " + code)
 				break
 
 		# remove router from graph (as something OBVIOUSLY happened)
@@ -361,6 +361,19 @@ class Router:
 
 				msgType = data[0]
 				msgData = data[1]
+
+				#routed data in the form:
+				#("data", ("code", ("type", (actual, data, here)))
+				if (msgType == "data"):
+					routerCode = msgData[1][0]
+					if (routerCode == self.routerCode):
+						#handle the message properly below
+						msgType = msgData[1][1][0]
+						msgData = msgData[1][1][1]
+					else:
+						#forward the data where it needs to go and continue with the next loop
+						self.arrSending[self.forwarding[routerCode]].put(data)
+						continue
 
 				#request for network graph
 				if (msgType == "rGraph"):
@@ -408,7 +421,7 @@ class Router:
 						# update own graph
 						self.networkTree = msgData[0]
 						self.lockTree.release()
-						self.broadcastUpdatedTree()
+						#elf.broadcastUpdatedTree()
 					else:
 						self.lockTree.release()
 
@@ -444,6 +457,14 @@ class Router:
 						for key, value in self.neighbors:
 							self.arrSending[key].put(data)
 
+				#request a file from the server
+				elif (msgType == "rFile"):
+					pass
+
+				#sending file data
+				elif (msgType == "sFile"):
+					pass
+
 				#print text received
 				elif (msgType == "text"):
 					print(str(code) + " sent: " + msgData[0])
@@ -452,7 +473,7 @@ class Router:
 				print('Socket receive error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)
 				break
 			except:
-				print("Error")
+				print("Listening Disconnected: " + code)
 				break
 
 		#remove router from graph (as something OBVIOUSLY happened)
