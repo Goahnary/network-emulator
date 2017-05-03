@@ -9,6 +9,7 @@ import os
 import ntpath
 import threading
 import math
+import time
 
 class Client(Router):
 
@@ -74,27 +75,29 @@ class Client(Router):
 					file = open(filePath, "rb")
 					if file:
 						fSize = os.stat(filePath).st_size
-						dSize = 150#Router.DATA_SIZE - Router.FILE_PADDING
+						print(fSize)
+						dSize = int(Router.DATA_SIZE / 50 - Router.FILE_PADDING)
 						loops = int(math.ceil(fSize / dSize))
 						fName = self.pathName(filePath)
 
 						#send initial file data and wait for filenum
 						with self.condReceiving:
-							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, (fName, fSize), True))
+							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, "cFile", (fName, fSize)))
 							self.condReceiving.wait()
 
 						for i in range(0, loops):
 							print("Sending part " + str(i + 1) + " of " + str(loops))
-							data = file.read(dSize)
-							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, (self.fileNum, i, data)))
+							file.seek(i * dSize)
+							data = bin(int.from_bytes(file.read(dSize), 'big'))
+							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, "sFile", (self.fileNum, i, data)))
+							time.sleep(.1)
 
 					print("File completed.\n")
 					file.close()
 
 	def receivedFile(self, data, source):
-		self.fileNum = data[0]
-
 		with self.condReceiving:
+			self.fileNum = data[0]
 			self.condReceiving.notify_all()
 
 	def pathName(self, path):

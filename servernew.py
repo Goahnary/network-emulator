@@ -53,23 +53,23 @@ class Server(Router):
 			self.generateGraph()
 			self.generateTree()
 
-			while True:
-				pass
-
 		except socket.error as msg:
 			print('Failed to create socket. Error Code : ' + str(msg.errno) + ' Message ' + msg.strerror)
 			sys.exit()
 
 	def downloadFile(self, data, source):
 		fileNum = data[0]
-		fData = data[2]
-		numBytes = data[1] * (Router.DATA_SIZE - Router.FILE_PADDING) + len(fData)
+		fData = int(data[2], 2)
+		fData = fData.to_bytes((fData.bit_length() + 7) // 8, 'big')
+		numBytes = data[1] * int(Router.DATA_SIZE / 50 - Router.FILE_PADDING) + len(fData)
 
 		#add bits to buffer
 		self.arrFiles[fileNum][2].extend(fData)
 
+		print(str(numBytes) + " / " + str(self.arrFiles[fileNum][1]))
+
 		#create the file from the array of bytes if its completed
-		if (numBytes == self.arrFiles[fileNum][1]):
+		if (numBytes >= self.arrFiles[fileNum][1]):
 			#create downloads directory
 			try:
 				if not os.path.exists(self.dDir):
@@ -80,10 +80,11 @@ class Server(Router):
 			#write to file and erase buffer
 			file = open(self.dDir + "/" + self.arrFiles[fileNum][0], "wb+")
 			if file:
-				file.write(self.arrFiles[fileNum][2])
+				file.write(bytearray(self.arrFiles[fileNum][2]))
+				print("File " + self.arrFiles[fileNum][0] + " finished downloading.")
 				self.arrFiles[fileNum][2] = []
 
-			file.close()
+				file.close()
 		
 	def createFile(self, data, source):
 		#get filename & filesize
@@ -93,11 +94,8 @@ class Server(Router):
 		#add new file data to array with filename & filesize
 		self.lockFiles.acquire()
 		fileNum = len(self.arrFiles)
-		self.arrFiles.append((fName, fSize, []))
+		self.arrFiles.append([fName, fSize, []])
 		self.lockFiles.release()
 
 		#send file number back
-		self.arrSending[self.router].put(self.wrapRoute(source, fileNum))
-
-s = Server("server", "", 5678)
-s.createConnection("localhost", 5508)
+		self.arrSending[self.router].put(self.wrapRoute(source, "rFile", fileNum))
