@@ -58,19 +58,26 @@ class Server(Router):
 			sys.exit()
 
 	def downloadFile(self, data, source):
+		fileNum = data[0]
+		fData = data[2]
+		numBits = data[1] * (Router.DATA_SIZE - Router.FILE_PADDING) + len(fData)
 
-		#create downloads directory
-		try:
-			if not os.path.exists(self.dDir):
-				os.makedirs(self.dDir)
-		except:
-			pass
+		#add bits to buffer
 
-		file = open(self.dDir + "/" + filePath, "wb+")
-		if file:
-			
+		#create the file from the array of bits if its completed
+		if (numBits == len(self.arrFiles[fileNum][1])):
+			#create downloads directory
+			try:
+				if not os.path.exists(self.dDir):
+					os.makedirs(self.dDir)
+			except:
+				pass
 
-		file.close()
+			file = open(self.dDir + "/" + self.arrFiles[fileNum][0], "wb+")
+			if file:
+				pass
+
+			file.close()
 		
 	def createFile(self, data, source):
 		#get filename & filesize
@@ -80,7 +87,7 @@ class Server(Router):
 		#add new file data to array with filename & filesize
 		self.lockFiles.acquire()
 		fileNum = len(self.arrFiles)
-		self.arrFiles.push((fName, [None] * fSize))
+		self.arrFiles.append((fName, [None] * fSize))
 		self.lockFiles.release()
 
 		#send file number back

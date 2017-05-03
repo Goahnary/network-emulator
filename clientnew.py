@@ -8,6 +8,7 @@ from tkinter import filedialog
 import os
 import ntpath
 import threading
+import math
 
 class Client(Router):
 
@@ -73,25 +74,25 @@ class Client(Router):
 					file = open(filePath, "rb")
 					if file:
 						fSize = eval(os.stat(filePath).st_size)
-						dSize = DATA_SIZE - FILE_PADDING
-						loops = ceil(fSize / dSize)
-						fName = pathName(filePath)
+						dSize = Router.DATA_SIZE - Router.FILE_PADDING
+						loops = int(math.ceil(fSize / dSize))
+						fName = self.pathName(filePath)
 
 						#send initial file data and wait for filenum
 						with self.condReceiving:
-							self.arrSending[self.router].put(wrapRoute(self.sendLocation, (fName, fSize), True))
+							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, (fName, fSize), True))
 							self.condReceiving.wait()
 
-						for i in xrange(0, loops):
-							print("Sending part " + (i + 1) + " of " + loops)
+						for i in range(0, loops):
+							print("Sending part " + str(i + 1) + " of " + str(loops))
 							data = file.read(dSize)
-							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, (self.fileNum, data)))
+							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, (self.fileNum, i, data)))
 
 					print("File completed.\n")
 					file.close()
 
 	def receivedFile(self, data, source):
-		self.fileNum = msgData[0]
+		self.fileNum = data[0]
 
 		with self.condReceiving:
 			self.condReceiving.notify_all()
