@@ -43,13 +43,11 @@ class Router:
 		#adjacency list (dict)
 		# { "A": {"B": 3}, "B": {"A": 3, "C": 5}, "C": {"B": 5}}
 		self.networkGraph = {}
-		self.lastGraphTime = 0
 
 		#minimum spanning tree (dict)
 		#same format as graph, but no cycles
 		# { "A": {"B": 3}, "B": {"A": 3, "C": 5}, "C": {"B": 5}}
 		self.networkTree = {}
-		self.lastTreeTime = 0
 
 		#conditional locks
 		self.condGraph = threading.Condition()
@@ -124,9 +122,12 @@ class Router:
 		self.networkGraph.pop(removedCode, None)
 		self.lockGraph.release()
 
-	def broadcastUpdatedGraph(self):
+	def broadcastUpdatedGraph(self, uTime = None):
+		if not uTime:
+			uTime = time.time()
+
 		for key, value in self.neighbors.items():
-			data = self.wrapMessage("uGraph", (self.networkGraph, time.time()))
+			data = self.wrapMessage("uGraph", (self.networkGraph, uTime))
 			self.arrSending[key].put(data)
 
 	def generateTree(self):
@@ -188,9 +189,12 @@ class Router:
 		#send updated tree to all routers
 		self.broadcastUpdatedTree()
 
-	def broadcastUpdatedTree(self):
+	def broadcastUpdatedTree(self, uTime = None):
+		if not uTime:
+			uTime = time.time()
+
 		for key, value in self.neighbors.items():
-			data = self.wrapMessage("uTree", (self.networkTree, time.time()))
+			data = self.wrapMessage("uTree", (self.networkTree, uTime))
 			self.arrSending[key].put(data)
 
 	#find a path from the target to the current Router
@@ -233,11 +237,9 @@ class Router:
 		#remove Queue from arrSending
 		self.arrSending.pop(removedCode, None)
 
-		#update graph
+		#update graph, MST & table
 		self.removeFromGraph(removedCode)
-		#update MST
 		self.generateTree()
-		#update forwarding table
 		self.generateForwarding()
 		pass
 
@@ -326,16 +328,18 @@ class Router:
 
 	#wrap sending and receiving data in JSON
 	def dataReceive(self, conn):
-		try:
-			return json.loads(conn.recv(DATA_SIZE).decode())
-		except:
-			print("Recv Error: " + self.routerCode)
+		#try:
+		return json.loads(conn.recv(Router.DATA_SIZE).decode())
+	#except:
+		#print("Recv Error: " + self.routerCode)
+		#return None
 
 	def dataSend(self, conn, msg):
 		try:
 			conn.send(json.dumps(msg).encode())
 		except:
 			print("Send Error: " + self.routerCode)
+			return None
 
 	#continuously send any data that code into the specified queue
 	def cycleSend(self, conn, code):
@@ -377,115 +381,117 @@ class Router:
 				msgSrc = ""
 				#routed data in the form:
 				#("data", (("destCode", "srcCode"), ("type", (actual, data, here))))
+				bThisRouter = True
 				if (msgType == "data"):
-					routerCode = msgData[1][0][0]
+					routerCode = msgData[0][0]
 					if (routerCode == self.routerCode):
 						#handle the message properly below
-						msgType = msgData[1][1][0]
-						msgData = msgData[1][1][1]
-						msgSrc = msgData[1][0][1]
+						msgType = msgData[1][0]
+						msgData = msgData[1][1]
+						msgSrc = msgData[0][1]
 					else:
 						#forward the data where it needs to go and continue with the next loop
 						self.arrSending[self.forwarding[routerCode]].put(data)
-						continue
+						bThisRouter = False
 
-				#request for network graph
-				if (msgType == "rGraph"):
-					self.arrSending[code].put(self.wrapMessage("sGraph", (self.networkGraph)))
+				if (bThisRouter):
+					#request for network graph
+					if (msgType == "rGraph"):
+						self.arrSending[code].put(self.wrapMessage("sGraph", (self.networkGraph)))
 
-				#received network graph
-				elif (msgType == "sGraph"):
-					self.lockGraph.acquire()
-					try:
-						self.networkGraph = msgData[0]
-					finally:
+					#received network graph
+					elif (msgType == "sGraph"):
+						self.lockGraph.acquire()
+						try:
+							self.networkGraph = msgData[0]
+						finally:
+							self.lockGraph.release()
+							with self.condGraph:
+								self.condGraph.notify_all()
+
+					# received updated network graph
+					elif (msgType == "uGraph"):
+						#broadcast to all neighbors if the graph is newer than previous
+						self.lockGraph.acquire()
+						if (self.networkGraph != msgData[0]):
+							# update own graph
+							self.networkGraph = msgData[0]
+							self.broadcastUpdatedGraph(msgData[1])
 						self.lockGraph.release()
-						with self.condGraph:
-							self.condGraph.notify_all()
 
-				# received updated network graph
-				elif (msgType == "uGraph"):
-					#broadcast to all neighbors if the graph is newer than previous
-					self.lockGraph.acquire()
-					if (self.networkGraph != msgData[0] and msgData[1] > self.lastGraphTime):
-						# update own graph
-						self.networkGraph = msgData[0]
-						self.broadcastUpdatedGraph()
-					self.lockGraph.release()
+					# request for network tree
+					if (msgType == "rTree"):
+						self.arrSending[code].put(self.wrapMessage("sTree", self.networkTree))
 
-				# request for network tree
-				if (msgType == "rTree"):
-					self.arrSending[code].put(self.wrapMessage("sTree", self.networkTree))
+					# received network tree
+					elif (msgType == "sTree"):
+						self.lockTree.acquire()
+						try:
+							self.networkTree = msgData[0]
+						finally:
+							self.lockTree.release()
+							with self.condTree:
+								self.condTree.notify_all()
 
-				# received network tree
-				elif (msgType == "sTree"):
-					self.lockTree.acquire()
-					try:
-						self.networkTree = msgData[0]
-					finally:
-						self.lockTree.release()
-						with self.condTree:
-							self.condTree.notify_all()
+					# received updated MST
+					elif (msgType == "uTree"):
+						# broadcast to all neighbors if the graph is newer than previous graph
+						self.lockTree.acquire()
+						if (self.networkTree != msgData[0]):
+							# update own tree
+							self.networkTree = msgData[0]
+							self.lockTree.release()
+							self.broadcastUpdatedTree(msgData[1])
+						else:
+							self.lockTree.release()
 
-				# received updated MST
-				elif (msgType == "uTree"):
-					# broadcast to all neighbors if the graph is newer than previous graph
-					self.lockTree.acquire()
-					if (self.networkTree != msgData[0] and msgData[1] > self.lastGraphTime):
-						# update own graph
-						self.networkTree = msgData[0]
-						self.lockTree.release()
-						#elf.broadcastUpdatedTree()
-					else:
-						self.lockTree.release()
+						#generate forwarding table based on new MST
+						self.generateForwarding()
 
-					#generate forwarding table based on new MST
-					self.generateForwarding()
+					# request for forwarding table
+					if (msgType == "rTable"):
+						self.arrSending[code].put(self.wrapMessage("sTable", self.forwarding))
 
-				# request for forwarding table
-				if (msgType == "rTable"):
-					self.arrSending[code].put(self.wrapMessage("sTable", self.forwarding))
+					# received forwarding table
+					elif (msgType == "sTable"):
+						self.lockTable.acquire()
+						try:
+							self.forwarding = msgData[0]
+						finally:
+							self.lockTable.release()
+							with self.condTable:
+								self.condTable.notify_all()
 
-				# received forwarding table
-				elif (msgType == "sTable"):
-					self.lockTable.acquire()
-					try:
-						self.forwarding = msgData[0]
-					finally:
-						self.lockTable.release()
-						with self.condTable:
-							self.condTable.notify_all()
+					#command for router to be removed
+					elif (msgType == "unplug"):
+						if not self.kill:
+							self.unplug()
 
-				#command for router to be removed
-				elif (msgType == "unplug"):
-					if not self.kill:
-						self.unplug()
+					#router was unplugged
+					elif (msgType == "removed"):
+						#remove router and broadcast if this router hasn't been removed yet
+						if msgData[0] in self.networkGraph:
+							self.removeRouter(msgData[0])
 
-				#router was unplugged
-				elif (msgType == "removed"):
-					#remove router and broadcast if this router hasn't been removed yet
-					if msgData[0] in self.networkGraph:
-						self.removeRouter(msgData[0])
+							#forward broadcast to all neighbors
+							for key, value in self.neighbors:
+								self.arrSending[key].put(data)
 
-						#forward broadcast to all neighbors
-						for key, value in self.neighbors:
-							self.arrSending[key].put(data)
+					#file data received from the server
+					elif (msgType == "rFile"):
+						self.receivedFile(msgData, msgSrc)
 
-				#file data received from the server
-				elif (msgType == "rFile"):
-					self.receivedFile(msgData, msgSrc)
+					#file data sent to the server
+					elif (msgType == "sFile"):
+						self.downloadFile(msgData, msgSrc)
 
-				#file data sent to the server
-				elif (msgType == "sFile"):
-					self.downloadFile(msgData, msgSrc)
+					#create file on the server
+					elif (msgType == "cFile"):
+						self.createFile(msgData, msgSrc)
 
-				#create file on the server
-				elif (msgType == "cFile"):
-					self.createFile(msgData, msgSrc)
-
-				#print text received
-				elif (msgType == "text"):
-					print(str(code) + " sent: " + msgData[0])
+					#print text received
+					elif (msgType == "text"):
+						print(str(code) + " sent: " + msgData[0])
 
 			except socket.error as msg:
 				print('Socket receive error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)

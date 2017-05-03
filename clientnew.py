@@ -67,14 +67,14 @@ class Client(Router):
 			# shows all router codes in network
 			if (uInput == "1"):
 				root = tk.Tk()
-				root.withdraw()
+				#root.withdraw()
 				filePath = filedialog.askopenfilename()
 
 				if (filePath):
 					file = open(filePath, "rb")
 					if file:
-						fSize = eval(os.stat(filePath).st_size)
-						dSize = Router.DATA_SIZE - Router.FILE_PADDING
+						fSize = os.stat(filePath).st_size
+						dSize = 150#Router.DATA_SIZE - Router.FILE_PADDING
 						loops = int(math.ceil(fSize / dSize))
 						fName = self.pathName(filePath)
 
@@ -100,3 +100,7 @@ class Client(Router):
 	def pathName(self, path):
 		head, tail = ntpath.split(path)
 		return tail or ntpath.basename(head)
+
+c = Client("client", "", 5677)
+c.createConnection("localhost", 5501)
+c.userListen()
