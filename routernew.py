@@ -34,6 +34,7 @@ class Router:
 		# { "router code": weight }
 		# { "A": 6, "C": 2 }
 		self.neighbors = {}
+		
 		# { "router code": queue }
 		# { "A": Queue(), "C": Queue() }
 		self.arrSending = {}
@@ -59,6 +60,8 @@ class Router:
 		self.lockTree = threading.Lock()
 		self.condTable = threading.Condition()
 		self.lockTable = threading.Lock()
+		self.condWeights = threading.Condition()
+		self.lockWeights = threading.Lock()
 
 		try:
 			self.sockListen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -123,6 +126,7 @@ class Router:
 		for key, value in self.networkGraph.items():
 			value.pop(removedCode, None)
 		self.networkGraph.pop(removedCode, None)
+		self.generateGraph()
 		self.lockGraph.release()
 
 	def broadcastUpdatedGraph(self, uTime = None):
@@ -309,6 +313,7 @@ class Router:
 
 			#add weight and receiving queue
 			self.neighbors[code] = weight
+			
 			self.arrSending[code] = queue.Queue()
 			self.arrReceiving[code] = queue.Queue()
 
@@ -517,7 +522,7 @@ class Router:
 						#print text received
 						elif (msgType == "text"):
 							print(str(code) + " sent: " + msgData[0])
-
+              
 			except socket.error as msg:
 				print('Socket receive error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)
 				break
