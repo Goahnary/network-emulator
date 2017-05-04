@@ -2,11 +2,13 @@ from routernew import Router
 import _thread
 import json
 import time
+import warnings
 from ast import literal_eval
 import networkx as nx
 import matplotlib.pyplot as plt
 
 class Monitor(Router):
+	warnings.filterwarnings("ignore",".*GUI is implemented.*")
 	
 	def __init__(self, monitorCode, host, port):
 		super().__init__(monitorCode, host, port)
@@ -14,14 +16,8 @@ class Monitor(Router):
 		# listen for new Routers
 		try:
 			_thread.start_new_thread(self.listen, ())
-# 			_thread.start_new_thread(self.redraw, ())
 		except:
 			print("Error: unable to start listen thread")
-
-# 	def redraw(self):
-# 		while True:
-# 			plt.pause(1)
-# 			plt.draw()
 
 	def userListen(self, *args):
 		plt.ion()
@@ -29,13 +25,12 @@ class Monitor(Router):
 		
 		#get user input (removing, asking stuff, testing, idk)
 		while True:
-			plt.draw()
 			plt.pause(2)
+			plt.draw()
 			
-			uInput = input("Enter number to choose option:\n\t[1] : list all routers\n\t[2] : send text to router"
-						   "\n\t[3] : show network graph\n\t[4] : show minimum spanning tree"
-						   "\n\t[5] : show router's forwarding table\n\t[6] : Add Router\n\t[7] : Remove Router"
-						   "\n\t[8] : Display Link Weights"
+			uInput = input("Enter number to choose option:\n\t[1] : List All Routers\n\t[2] : Send Text to Router"
+						   "\n\t[3] : Show Network Graph\n\t[4] : Show Minimum Spanning Tree"
+						   "\n\t[5] : Show Router's Forwarding Table\n\t[6] : Add Router\n\t[7] : Remove Router"
 						   "\nEnter choice: ")
 
 			#shows all router codes in network
@@ -132,26 +127,6 @@ class Monitor(Router):
 					print("That router does not exist.\n")
 					
 				self.drawGraph(self.networkGraph)
-				self.drawGraph(self.networkGraph)
-				self.drawGraph(self.networkGraph)
-				
-			#list link weights
-			elif (uInput == "8"):
-				code = input("Enter router code (i.e. A): ")
-				
-				try:
-					data = self.wrapMessage("rWeights", ())
-
-					#update this table with router's forwarding table
-					with self.condWeights:
-						self.arrSending[code].put(data)
-						self.condWeights.wait()
-
-					#print forwarding table
-					print(json.dumps(self.neighbors, sort_keys=True, indent=4), "\n")
-				except KeyError:
-					print("That router does not exist.\n")
-
 
 	def drawGraph(self, container):
 		plt.clf()
@@ -178,4 +153,4 @@ class Monitor(Router):
 
 		# labels
 		nx.draw_networkx_labels(G, pos, font_size=20, font_family='sans-serif', font_color='w')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=10, font_family='sans-serif', font_color='b')
+		nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=10, font_family='sans-serif', font_color='b')
