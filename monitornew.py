@@ -105,6 +105,7 @@ class Monitor(Router):
 				code = input("Enter router code to remove (i.e. A): ")
 				if code in self.neighbors:
 					self.arrSending[code].put( self.wrapMessage("unplug", ()))
+					self.neighbors.pop(code, None)
 				else:
 					print("That router does not exist.\n")
 
@@ -115,9 +116,12 @@ class Monitor(Router):
 		for key, value in container.items():
 			G.add_node(str(key))
 
+		edge_labels = {}
 		for key, value in container.items():
 			for vKey, vValue in value.items():
 				G.add_edge(str(key), str(vKey), weight=vValue)
+				edge_labels[(str(key), str(vKey))] = vValue
+
 
 		pos = nx.spring_layout(G)  # positions for all nodes
 
@@ -129,6 +133,7 @@ class Monitor(Router):
 
 		# labels
 		nx.draw_networkx_labels(G, pos, font_size=20, font_family='sans-serif', font_color='w')
+		nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=10, font_family='sans-serif', font_color='b')
 
 		plt.axis('off')
 		plt.savefig("weighted_graph.png")  # save as png

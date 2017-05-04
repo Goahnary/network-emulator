@@ -16,6 +16,7 @@ class Router:
 	#constants
 	DATA_SIZE = 8192
 	FILE_PADDING = 64
+	PACKET_SIZE = int(DATA_SIZE / 50 - FILE_PADDING)
 
 	#routerCode = "A" or some other letter.
 	def __init__(self, routerCode, host, port):
@@ -36,6 +37,7 @@ class Router:
 		# { "router code": queue }
 		# { "A": Queue(), "C": Queue() }
 		self.arrSending = {}
+		self.arrReceiving = {}
 
 		#forwarding table (dict)
 		# { "A": "B", "B": "B", "C": "B" ... }
@@ -232,17 +234,18 @@ class Router:
 		self.kill = True
 
 	#removedCode = code of the router to remove
-	def removeRouter(self, removedCode):
+	def removeRouter(self, removedCode, generateNew = True):
 		#remove from neighbors
 		self.neighbors.pop(removedCode, None)
 		#remove Queue from arrSending
 		self.arrSending.pop(removedCode, None)
+		self.arrReceiving.pop(removedCode, None)
 
 		#update graph, MST & table
-		self.removeFromGraph(removedCode)
-		self.generateTree()
-		self.generateForwarding()
-		pass
+		if generateNew:
+			self.removeFromGraph(removedCode)
+			self.generateTree()
+			self.generateForwarding()
 
 
 	#tupRouter = ("IP", port)
@@ -262,6 +265,7 @@ class Router:
 			self.neighbors[code] = weight
 			#create a queue to send data to this connection
 			self.arrSending[code] = queue.Queue()
+			self.arrReceiving[code] = queue.Queue()
 
 			# continuously send whatever data is in the buffer
 			_thread.start_new_thread(self.cycleSend, (sock, code))
@@ -285,6 +289,7 @@ class Router:
 
 		#create queue to send data to the monitor
 		self.arrSending[self.monitorCode] = queue.Queue()
+		self.arrReceiving[self.monitorCode] = queue.Queue()
 
 		# continuously send data in queue and receive from new Router
 		_thread.start_new_thread(self.cycleSend, (self.sockMonitor, self.monitorCode))
@@ -305,6 +310,7 @@ class Router:
 			#add weight and receiving queue
 			self.neighbors[code] = weight
 			self.arrSending[code] = queue.Queue()
+			self.arrReceiving[code] = queue.Queue()
 
 			#continuously send data in queue and receive from new Router
 			_thread.start_new_thread(self.cycleRecv, (conn, code))
@@ -322,27 +328,35 @@ class Router:
 			data = (data,)
 		return self.wrapMessage("data", ((destination, self.routerCode), (dType, data)))
 
-	#wrap sending and receiving data in JSON
-	def dataReceive(self, conn):
-		#try:
-		msg = conn.recv(Router.DATA_SIZE).decode()
+	def formatMultiData(self, msg):
 		#if two "packets" are received at once
 		try:
 			literal_eval(msg)
 		except ValueError:
 			msg = "[\"multiPacket\", [" + msg.replace("][", "],[") + "]]"
 		return json.loads(msg)
-	#except:
-		#print("Recv Error: " + self.routerCode)
-		#return None
+
+	#wrap sending and receiving data in JSON
+	def dataReceive(self, conn, code = None):
+		try:
+			while True:
+				msg = conn.recv(Router.DATA_SIZE).decode()
+
+				if code:
+					self.arrReceiving[code].put(msg)
+				else:
+					return self.formatMultiData(msg)
+		except:
+			print("Recv Error: " + self.routerCode)
+			return None
 
 	def dataSend(self, conn, msg):
-		#try:
-		msg = json.dumps(msg)
-		conn.send(msg.encode())
-		#except:
-			#print("Send Error: " + self.routerCode)
-			#return None
+		try:
+			msg = json.dumps(msg)
+			conn.send(msg.encode())
+		except:
+			print("Send Error: " + self.routerCode)
+			return None
 
 	#continuously send any data that code into the specified queue
 	def cycleSend(self, conn, code):
@@ -353,9 +367,9 @@ class Router:
 			except socket.error as msg:
 				print('Socket send error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)
 				break
-			#except:
-			#	print("Sending Disconnected: " + code)
-			#	break
+			except:
+				print("Sending Disconnected: " + code)
+				break
 
 		# remove router from graph (as something OBVIOUSLY happened)
 		self.removeRouter(code)
@@ -364,9 +378,12 @@ class Router:
 
 	#continuously receive data from the adjacent Router and process it
 	def cycleRecv(self, conn, code):
+		#start thread to just read data and add to queue (*hopefully* no missing data)
+		_thread.start_new_thread(self.dataReceive, (conn, code))
+
 		while True:
 			try:
-				data = self.dataReceive(conn)
+				data = self.formatMultiData(self.arrReceiving[code].get())
 				if not data:
 					break
 
@@ -400,6 +417,7 @@ class Router:
 							#forward the data where it needs to go and continue with the next loop
 							self.arrSending[self.forwarding[routerCode]].put(sendData)
 							bThisRouter = False
+							print("Forwarding data for " + str(routerCode) + " to " + str(self.forwarding[routerCode]))
 
 					if (bThisRouter):
 						#request for network graph
@@ -481,7 +499,7 @@ class Router:
 								self.removeRouter(msgData[0])
 
 								#forward broadcast to all neighbors
-								for key, value in self.neighbors:
+								for key, value in self.neighbors.items():
 									self.arrSending[key].put(sendData)
 
 						#file data received from the server
@@ -503,9 +521,9 @@ class Router:
 			except socket.error as msg:
 				print('Socket receive error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)
 				break
-			#except:
-			#	print("Listening Disconnected: " + code)
-			#	break
+			except:
+				print("Listening Disconnected: " + code)
+				break
 
 		#remove router from graph (as something OBVIOUSLY happened)
 		self.removeRouter(code)

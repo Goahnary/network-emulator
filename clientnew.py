@@ -22,14 +22,6 @@ class Client(Router):
 		self.condReceiving = threading.Condition()
 		self.fileNum = 0
 
-		# listen for new Routers
-		"""
-		try:
-			_thread.start_new_thread(self.listen, ())
-		except:
-			print("Error: unable to start listen thread")
-		"""
-
 	def createConnection(self, IP, port):
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,6 +38,7 @@ class Client(Router):
 			self.neighbors[self.router] = weight
 			# create a queue to send data to this connection
 			self.arrSending[self.router] = queue.Queue()
+			self.arrReceiving[self.router] = queue.Queue()
 
 			# continuously send whatever data is in the buffer
 			_thread.start_new_thread(self.cycleSend, (sock, self.router))
@@ -75,8 +68,7 @@ class Client(Router):
 					file = open(filePath, "rb")
 					if file:
 						fSize = os.stat(filePath).st_size
-						print(fSize)
-						dSize = int(Router.DATA_SIZE / 50 - Router.FILE_PADDING)
+						dSize = Router.PACKET_SIZE
 						loops = int(math.ceil(fSize / dSize))
 						fName = self.pathName(filePath)
 
@@ -85,12 +77,16 @@ class Client(Router):
 							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, "cFile", (fName, fSize)))
 							self.condReceiving.wait()
 
+						fData = file.read().decode("latin-1")
+
 						for i in range(0, loops):
 							print("Sending part " + str(i + 1) + " of " + str(loops))
-							file.seek(i * dSize)
-							data = bin(int.from_bytes(file.read(dSize), 'big'))
+							dStart = i * dSize
+							dEnd = dStart + dSize
+							#data = bin(int.from_bytes(fData[dStart:dEnd], 'big'))
+							data = fData[dStart:dEnd]
 							self.arrSending[self.router].put(self.wrapRoute(self.sendLocation, "sFile", (self.fileNum, i, data)))
-							time.sleep(.1)
+							time.sleep(.01)
 
 					print("File completed.\n")
 					file.close()

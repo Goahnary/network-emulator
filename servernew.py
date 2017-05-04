@@ -20,14 +20,6 @@ class Server(Router):
 		self.lockFiles = threading.Lock()
 		self.arrFiles = []
 
-		# listen for new Routers
-		"""
-		try:
-			_thread.start_new_thread(self.listen, ())
-		except:
-			print("Error: unable to start listen thread")
-		"""
-
 	def createConnection(self, IP, port):
 		try:
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -44,6 +36,7 @@ class Server(Router):
 			self.neighbors[self.router] = weight
 			# create a queue to send data to this connection
 			self.arrSending[self.router] = queue.Queue()
+			self.arrReceiving[self.router] = queue.Queue()
 
 			# continuously send whatever data is in the buffer
 			_thread.start_new_thread(self.cycleSend, (sock, self.router))
@@ -59,42 +52,45 @@ class Server(Router):
 
 	def downloadFile(self, data, source):
 		fileNum = data[0]
-		fData = int(data[2], 2)
-		fData = fData.to_bytes((fData.bit_length() + 7) // 8, 'big')
-		numBytes = data[1] * int(Router.DATA_SIZE / 50 - Router.FILE_PADDING) + len(fData)
+		#fData = int(data[2], 2)
+		#fData = fData.to_bytes((fData.bit_length() + 7) // 8, 'big')
+		fData = data[2].encode("latin-1")
+		numBytes = data[1] * Router.PACKET_SIZE + len(fData)
+		startBytes = data[1] * Router.PACKET_SIZE
 
-		#add bits to buffer
-		self.arrFiles[fileNum][2].extend(fData)
+		#add bytes to file
+		file = self.arrFiles[fileNum][2]
+		file.seek(startBytes)
+		file.write(bytearray(fData))
 
 		print(str(numBytes) + " / " + str(self.arrFiles[fileNum][1]))
 
 		#create the file from the array of bytes if its completed
 		if (numBytes >= self.arrFiles[fileNum][1]):
-			#create downloads directory
-			try:
-				if not os.path.exists(self.dDir):
-					os.makedirs(self.dDir)
-			except:
-				pass
-
-			#write to file and erase buffer
-			file = open(self.dDir + "/" + self.arrFiles[fileNum][0], "wb+")
-			if file:
-				file.write(bytearray(self.arrFiles[fileNum][2]))
-				print("File " + self.arrFiles[fileNum][0] + " finished downloading.")
-				self.arrFiles[fileNum][2] = []
-
-				file.close()
+			print("File " + self.arrFiles[fileNum][0] + " finished downloading.")
+			file.close()
 		
 	def createFile(self, data, source):
 		#get filename & filesize
 		fName = data[0]
 		fSize = data[1]
 
+		# create downloads directory
+		try:
+			if not os.path.exists(self.dDir):
+				os.makedirs(self.dDir)
+		except:
+			pass
+
 		#add new file data to array with filename & filesize
 		self.lockFiles.acquire()
 		fileNum = len(self.arrFiles)
-		self.arrFiles.append([fName, fSize, []])
+		#create file of necessary size
+		file = open(self.dDir + "/" + fName, "wb+")
+		if file:
+			file.seek(fSize - 1)
+			file.write(b"\0")
+		self.arrFiles.append([fName, fSize, file])
 		self.lockFiles.release()
 
 		#send file number back
