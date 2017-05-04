@@ -6,6 +6,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 class Monitor(Router):
+	
 	def __init__(self, monitorCode, host, port):
 		super().__init__(monitorCode, host, port)
 
@@ -15,9 +16,15 @@ class Monitor(Router):
 		except:
 			print("Error: unable to start listen thread")
 
-	def userListen(self):
+	def userListen(self, *args):
+		plt.ion()
+		plt.show()
+		
 		#get user input (removing, asking stuff, testing, idk)
 		while True:
+			plt.draw()
+			plt.pause(2)
+			
 			uInput = input("Enter number to choose option:\n\t[1] : list all routers\n\t[2] : send text to router"
 						   "\n\t[3] : show network graph\n\t[4] : show minimum spanning tree"
 						   "\n\t[5] : show router's forwarding table\n\t[6] : Add Router\n\t[7] : Remove Router"
@@ -40,6 +47,9 @@ class Monitor(Router):
 
 			#show network graph
 			elif (uInput == "3"):
+# 				plt.show(block=False)
+				self.drawGraph(self.networkGraph)
+# 				plt.show(block=False)
 				for key, value in self.neighbors.items():
 					data = self.wrapMessage("rGraph", ())
 
@@ -49,7 +59,6 @@ class Monitor(Router):
 						self.condGraph.wait()
 					break
 
-				self.drawGraph(self.networkGraph)
 				#print(json.dumps(self.networkGraph, sort_keys=True, indent=4), "\n")
 
 			#show spanning tree
@@ -68,6 +77,7 @@ class Monitor(Router):
 
 			# show a specific router's forwarding table
 			elif (uInput == "5"):
+				self.drawGraph(self.networkGraph)
 				code = input("Enter router code to get table (i.e. A): ")
 				try:
 					data = self.wrapMessage("rTable", ())
@@ -110,6 +120,8 @@ class Monitor(Router):
 
 
 	def drawGraph(self, container):
+		plt.clf()
+
 		G = nx.Graph()
 
 		for key, value in container.items():
@@ -129,7 +141,3 @@ class Monitor(Router):
 
 		# labels
 		nx.draw_networkx_labels(G, pos, font_size=20, font_family='sans-serif', font_color='w')
-
-		plt.axis('off')
-		plt.savefig("weighted_graph.png")  # save as png
-		plt.show()  # display
