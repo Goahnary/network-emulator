@@ -7,13 +7,16 @@ import json
 import queue
 import operator
 import time
-
-#constants
-DATA_SIZE = 8192
+from ast import literal_eval
 
 class Router:
 	monitorIP = "127.0.0.1"
 	monitorPort = 5000
+
+	#constants
+	DATA_SIZE = 8192
+	FILE_PADDING = 64
+	PACKET_SIZE = int(DATA_SIZE / 50 - FILE_PADDING)
 
 	#routerCode = "A" or some other letter.
 	def __init__(self, routerCode, host, port):
@@ -35,6 +38,7 @@ class Router:
 		# { "router code": queue }
 		# { "A": Queue(), "C": Queue() }
 		self.arrSending = {}
+		self.arrReceiving = {}
 
 		#forwarding table (dict)
 		# { "A": "B", "B": "B", "C": "B" ... }
@@ -43,13 +47,11 @@ class Router:
 		#adjacency list (dict)
 		# { "A": {"B": 3}, "B": {"A": 3, "C": 5}, "C": {"B": 5}}
 		self.networkGraph = {}
-		self.lastGraphTime = 0
 
 		#minimum spanning tree (dict)
 		#same format as graph, but no cycles
 		# { "A": {"B": 3}, "B": {"A": 3, "C": 5}, "C": {"B": 5}}
 		self.networkTree = {}
-		self.lastTreeTime = 0
 
 		#conditional locks
 		self.condGraph = threading.Condition()
@@ -127,9 +129,12 @@ class Router:
 		self.generateGraph()
 		self.lockGraph.release()
 
-	def broadcastUpdatedGraph(self):
+	def broadcastUpdatedGraph(self, uTime = None):
+		if not uTime:
+			uTime = time.time()
+
 		for key, value in self.neighbors.items():
-			data = self.wrapMessage("uGraph", (self.networkGraph, time.time()))
+			data = self.wrapMessage("uGraph", (self.networkGraph, uTime))
 			self.arrSending[key].put(data)
 
 	def generateTree(self):
@@ -191,9 +196,12 @@ class Router:
 		#send updated tree to all routers
 		self.broadcastUpdatedTree()
 
-	def broadcastUpdatedTree(self):
+	def broadcastUpdatedTree(self, uTime = None):
+		if not uTime:
+			uTime = time.time()
+
 		for key, value in self.neighbors.items():
-			data = self.wrapMessage("uTree", (self.networkTree, time.time()))
+			data = self.wrapMessage("uTree", (self.networkTree, uTime))
 			self.arrSending[key].put(data)
 
 	#find a path from the target to the current Router
@@ -230,19 +238,18 @@ class Router:
 		self.kill = True
 
 	#removedCode = code of the router to remove
-	def removeRouter(self, removedCode):
+	def removeRouter(self, removedCode, generateNew = True):
 		#remove from neighbors
 		self.neighbors.pop(removedCode, None)
 		#remove Queue from arrSending
 		self.arrSending.pop(removedCode, None)
+		self.arrReceiving.pop(removedCode, None)
 
-		#update graph
-		self.removeFromGraph(removedCode)
-		#update MST
-		self.generateTree()
-		#update forwarding table
-		self.generateForwarding()
-		pass
+		#update graph, MST & table
+		if generateNew:
+			self.removeFromGraph(removedCode)
+			self.generateTree()
+			self.generateForwarding()
 
 
 	#tupRouter = ("IP", port)
@@ -262,6 +269,7 @@ class Router:
 			self.neighbors[code] = weight
 			#create a queue to send data to this connection
 			self.arrSending[code] = queue.Queue()
+			self.arrReceiving[code] = queue.Queue()
 
 			# continuously send whatever data is in the buffer
 			_thread.start_new_thread(self.cycleSend, (sock, code))
@@ -285,6 +293,7 @@ class Router:
 
 		#create queue to send data to the monitor
 		self.arrSending[self.monitorCode] = queue.Queue()
+		self.arrReceiving[self.monitorCode] = queue.Queue()
 
 		# continuously send data in queue and receive from new Router
 		_thread.start_new_thread(self.cycleSend, (self.sockMonitor, self.monitorCode))
@@ -306,6 +315,7 @@ class Router:
 			self.neighbors[code] = weight
 			
 			self.arrSending[code] = queue.Queue()
+			self.arrReceiving[code] = queue.Queue()
 
 			#continuously send data in queue and receive from new Router
 			_thread.start_new_thread(self.cycleRecv, (conn, code))
@@ -317,18 +327,41 @@ class Router:
 			msgData = (msgData,)
 		return (msgType, msgData)
 
-	#wrap sending and receiving data in JSON
-	def dataReceive(self, conn):
+	#wrap data to route through the network
+	def wrapRoute(self, destination, dType, data):
+		if not isinstance(data, tuple):
+			data = (data,)
+		return self.wrapMessage("data", ((destination, self.routerCode), (dType, data)))
+
+	def formatMultiData(self, msg):
+		#if two "packets" are received at once
 		try:
-			return json.loads(conn.recv(DATA_SIZE).decode())
+			literal_eval(msg)
+		except ValueError:
+			msg = "[\"multiPacket\", [" + msg.replace("][", "],[") + "]]"
+		return json.loads(msg)
+
+	#wrap sending and receiving data in JSON
+	def dataReceive(self, conn, code = None):
+		try:
+			while True:
+				msg = conn.recv(Router.DATA_SIZE).decode()
+
+				if code:
+					self.arrReceiving[code].put(msg)
+				else:
+					return self.formatMultiData(msg)
 		except:
 			print("Recv Error: " + self.routerCode)
+			return None
 
 	def dataSend(self, conn, msg):
 		try:
-			conn.send(json.dumps(msg).encode())
+			msg = json.dumps(msg)
+			conn.send(msg.encode())
 		except:
 			print("Send Error: " + self.routerCode)
+			return None
 
 	#continuously send any data that code into the specified queue
 	def cycleSend(self, conn, code):
@@ -340,7 +373,7 @@ class Router:
 				print('Socket send error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)
 				break
 			except:
-				print("Error")
+				print("Sending Disconnected: " + code)
 				break
 
 		# remove router from graph (as something OBVIOUSLY happened)
@@ -350,133 +383,163 @@ class Router:
 
 	#continuously receive data from the adjacent Router and process it
 	def cycleRecv(self, conn, code):
+		#start thread to just read data and add to queue (*hopefully* no missing data)
+		_thread.start_new_thread(self.dataReceive, (conn, code))
+
 		while True:
 			try:
-				data = self.dataReceive(conn)
+				data = self.formatMultiData(self.arrReceiving[code].get())
 				if not data:
 					break
 
-				#output some flavor text to the log
-				if (code == self.monitorCode):
-					#print("Monitor sent: ", str(data))
-					pass
-				else:
-					#print("Router ", code, " sent: ", str(data))
-					pass
-
 				msgType = data[0]
 				msgData = data[1]
+				sendData = data
 
-				#request for network graph
-				if (msgType == "rGraph"):
-					self.arrSending[code].put(self.wrapMessage("sGraph", (self.networkGraph)))
+				#handle when multiple "packets" are received at once
+				loops = 1
+				if (msgType == "multiPacket"):
+					loops = len(msgData)
 
-				#received network graph
-				elif (msgType == "sGraph"):
-					self.lockGraph.acquire()
-					try:
-						self.networkGraph = msgData[0]
-					finally:
-						self.lockGraph.release()
-						with self.condGraph:
-							self.condGraph.notify_all()
+				for i in range(0, loops):
+					if (loops > 1):
+						sendData = data[1][i]
+						msgType = sendData[0]
+						msgData = sendData[1]
 
-				# received updated network graph
-				elif (msgType == "uGraph"):
-					#broadcast to all neighbors if the graph is newer than previous
-					self.lockGraph.acquire()
-					if (self.networkGraph != msgData[0] and msgData[1] > self.lastGraphTime):
-						# update own graph
-						self.networkGraph = msgData[0]
-						self.broadcastUpdatedGraph()
-					self.lockGraph.release()
+					msgSrc = ""
+					#routed data in the form:
+					#("data", (("destCode", "srcCode"), ("type", (actual, data, here))))
+					bThisRouter = True
+					if (msgType == "data"):
+						routerCode = msgData[0][0]
+						if (routerCode == self.routerCode):
+							#handle the message properly below
+							msgType = msgData[1][0]
+							msgSrc = msgData[0][1]
+							msgData = msgData[1][1]
+						else:
+							#forward the data where it needs to go and continue with the next loop
+							self.arrSending[self.forwarding[routerCode]].put(sendData)
+							bThisRouter = False
+							print("Forwarding data for " + str(routerCode) + " to " + str(self.forwarding[routerCode]))
 
-				# request for network tree
-				if (msgType == "rTree"):
-					self.arrSending[code].put(self.wrapMessage("sTree", self.networkTree))
+					if (bThisRouter):
+						#request for network graph
+						if (msgType == "rGraph"):
+							self.arrSending[code].put(self.wrapMessage("sGraph", (self.networkGraph)))
 
-				# received network tree
-				elif (msgType == "sTree"):
-					self.lockTree.acquire()
-					try:
-						self.networkTree = msgData[0]
-					finally:
-						self.lockTree.release()
-						with self.condTree:
-							self.condTree.notify_all()
+						#received network graph
+						elif (msgType == "sGraph"):
+							self.lockGraph.acquire()
+							try:
+								self.networkGraph = msgData[0]
+							finally:
+								self.lockGraph.release()
+								with self.condGraph:
+									self.condGraph.notify_all()
 
-				# received updated MST
-				elif (msgType == "uTree"):
-					# broadcast to all neighbors if the graph is newer than previous graph
-					self.lockTree.acquire()
-					if (self.networkTree != msgData[0] and msgData[1] > self.lastGraphTime):
-						# update own graph
-						self.networkTree = msgData[0]
-						self.lockTree.release()
-						self.broadcastUpdatedTree()
-					else:
-						self.lockTree.release()
+						# received updated network graph
+						elif (msgType == "uGraph"):
+							#broadcast to all neighbors if the graph is newer than previous
+							self.lockGraph.acquire()
+							if (self.networkGraph != msgData[0]):
+								# update own graph
+								self.networkGraph = msgData[0]
+								self.broadcastUpdatedGraph(msgData[1])
+							self.lockGraph.release()
 
-					#generate forwarding table based on new MST
-					self.generateForwarding()
+						# request for network tree
+						if (msgType == "rTree"):
+							self.arrSending[code].put(self.wrapMessage("sTree", self.networkTree))
 
-				# request for forwarding table
-				if (msgType == "rTable"):
-					self.arrSending[code].put(self.wrapMessage("sTable", self.forwarding))
-				
-				# request for weights
-				if (msgType == "rWeights"):
-					self.arrSending[code].put(self.wrapMessage("sWeights", self.neighbors))
+						# received network tree
+						elif (msgType == "sTree"):
+							self.lockTree.acquire()
+							try:
+								self.networkTree = msgData[0]
+							finally:
+								self.lockTree.release()
+								with self.condTree:
+									self.condTree.notify_all()
 
-				# received forwarding table
-				elif (msgType == "sTable"):
-					self.lockTable.acquire()
-					try:
-						self.forwarding = msgData[0]
-					finally:
-						self.lockTable.release()
-						with self.condTable:
-							self.condTable.notify_all()
-							
-				# received link weights
-				elif (msgType == "sWeights"):
-					self.lockWeights.acquire()
-					try:
-						self.forwarding = msgData[0]
-					finally:
-						self.lockWeights.release()
-						with self.condWeigths:
-							self.condWeights.notify_all()
+						# received updated MST
+						elif (msgType == "uTree"):
+							# broadcast to all neighbors if the graph is newer than previous graph
+							self.lockTree.acquire()
+							if (self.networkTree != msgData[0]):
+								# update own tree
+								self.networkTree = msgData[0]
+								self.lockTree.release()
+								self.broadcastUpdatedTree(msgData[1])
+							else:
+								self.lockTree.release()
 
-				#command for router to be removed
-				elif (msgType == "unplug"):
-					if not self.kill:
-						self.unplug()
+							#generate forwarding table based on new MST
+							self.generateForwarding()
 
-				#router was unplugged
-				elif (msgType == "removed"):
-					#remove router and broadcast if this router hasn't been removed yet
-					if msgData[0] in self.networkGraph:
-						self.removeRouter(msgData[0])
+						# request for forwarding table
+						if (msgType == "rTable"):
+							self.arrSending[code].put(self.wrapMessage("sTable", self.forwarding))
 
-						#forward broadcast to all neighbors
-						for key, value in self.neighbors:
-							self.arrSending[key].put(data)
-							
-					self.generateGraph()
+						# received forwarding table
+						elif (msgType == "sTable"):
+							self.lockTable.acquire()
+							try:
+								self.forwarding = msgData[0]
+							finally:
+								self.lockTable.release()
+								with self.condTable:
+									self.condTable.notify_all()
 
-				#print text received
-				elif (msgType == "text"):
-					print(str(code) + " sent: " + msgData[0])
+						#command for router to be removed
+						elif (msgType == "unplug"):
+							if not self.kill:
+								self.unplug()
 
+						#router was unplugged
+						elif (msgType == "removed"):
+							#remove router and broadcast if this router hasn't been removed yet
+							if msgData[0] in self.networkGraph:
+								self.removeRouter(msgData[0])
+
+								#forward broadcast to all neighbors
+								for key, value in self.neighbors.items():
+									self.arrSending[key].put(sendData)
+
+						#file data received from the server
+						elif (msgType == "rFile"):
+							self.receivedFile(msgData, msgSrc)
+
+						#file data sent to the server
+						elif (msgType == "sFile"):
+							self.downloadFile(msgData, msgSrc)
+
+						#create file on the server
+						elif (msgType == "cFile"):
+							self.createFile(msgData, msgSrc)
+
+						#print text received
+						elif (msgType == "text"):
+							print(str(code) + " sent: " + msgData[0])
+              
 			except socket.error as msg:
 				print('Socket receive error. Error Code: ' + str(msg.errno) + ' Message ' + msg.strerror)
 				break
 			except:
-				print("Error")
+				print("Listening Disconnected: " + code)
 				break
 
 		#remove router from graph (as something OBVIOUSLY happened)
 		self.removeRouter(code)
 
 		conn.close()
+
+	def receivedFile(self, data, source):
+		pass
+
+	def downloadFile(self, data, source):
+		pass
+
+	def createFile(self, data, source):
+		pass

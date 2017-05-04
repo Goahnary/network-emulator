@@ -1,5 +1,6 @@
 from routernew import Router
 from monitornew import Monitor
+from servernew import Server
 
 mon = Monitor("monitor", "", 5000)
 r1 = Router("A", "", 5501)
@@ -18,5 +19,8 @@ r5.initConnections([("localhost", 5503), ("localhost", 5504), ("localhost", 5502
 r6.initConnections([("localhost", 5504)])
 r7.initConnections([("localhost", 5506)])
 r8.initConnections([("localhost", 5507), ("localhost", 5502), ("localhost", 5506)])
+
+s = Server("server", "", 5678)
+s.createConnection("localhost", 5508)
 
 mon.userListen()
