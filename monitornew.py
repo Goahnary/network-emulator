@@ -1,7 +1,6 @@
 from routernew import Router
 import _thread
 import json
-import time
 import warnings
 from ast import literal_eval
 import networkx as nx
