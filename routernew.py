@@ -31,6 +31,7 @@ class Router:
 		# { "router code": weight }
 		# { "A": 6, "C": 2 }
 		self.neighbors = {}
+		
 		# { "router code": queue }
 		# { "A": Queue(), "C": Queue() }
 		self.arrSending = {}
@@ -57,6 +58,8 @@ class Router:
 		self.lockTree = threading.Lock()
 		self.condTable = threading.Condition()
 		self.lockTable = threading.Lock()
+		self.condWeights = threading.Condition()
+		self.lockWeights = threading.Lock()
 
 		try:
 			self.sockListen = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -121,6 +124,7 @@ class Router:
 		for key, value in self.networkGraph.items():
 			value.pop(removedCode, None)
 		self.networkGraph.pop(removedCode, None)
+		self.generateGraph()
 		self.lockGraph.release()
 
 	def broadcastUpdatedGraph(self):
@@ -300,6 +304,7 @@ class Router:
 
 			#add weight and receiving queue
 			self.neighbors[code] = weight
+			
 			self.arrSending[code] = queue.Queue()
 
 			#continuously send data in queue and receive from new Router
@@ -418,6 +423,10 @@ class Router:
 				# request for forwarding table
 				if (msgType == "rTable"):
 					self.arrSending[code].put(self.wrapMessage("sTable", self.forwarding))
+				
+				# request for weights
+				if (msgType == "rWeights"):
+					self.arrSending[code].put(self.wrapMessage("sWeights", self.neighbors))
 
 				# received forwarding table
 				elif (msgType == "sTable"):
@@ -428,6 +437,16 @@ class Router:
 						self.lockTable.release()
 						with self.condTable:
 							self.condTable.notify_all()
+							
+				# received link weights
+				elif (msgType == "sWeights"):
+					self.lockWeights.acquire()
+					try:
+						self.forwarding = msgData[0]
+					finally:
+						self.lockWeights.release()
+						with self.condWeigths:
+							self.condWeights.notify_all()
 
 				#command for router to be removed
 				elif (msgType == "unplug"):
@@ -443,6 +462,8 @@ class Router:
 						#forward broadcast to all neighbors
 						for key, value in self.neighbors:
 							self.arrSending[key].put(data)
+							
+					self.generateGraph()
 
 				#print text received
 				elif (msgType == "text"):
