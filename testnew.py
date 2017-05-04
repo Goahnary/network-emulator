@@ -1,6 +1,6 @@
-from routernew import Router
-from monitornew import Monitor
-from servernew import Server
+from router import Router
+from monitor import Monitor
+from server import Server
 
 mon = Monitor("monitor", "", 5000)
 r1 = Router("A", "", 5501)
